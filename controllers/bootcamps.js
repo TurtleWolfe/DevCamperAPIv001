@@ -8,6 +8,22 @@ const BootCamp = require('../models/BootCamp');
 // @route   POST /api/v1/bootcamps              C
 // @access  Private                             C
 exports.createBootCamp = asyncHandler(async (req, res, next) => {
+    // Add user to req,body
+    req.body.user = req.user.id;
+
+    // Check for published bootcamp
+    const publishedBootcamp = await BootCamp.findOne({ user: req.user.id });
+
+    // If the user is not an admin, they can only add one bootcamp
+    if (publishedBootcamp && req.user.role !== 'admin') {
+        return next(
+            new ErrorResponse(
+                `The user with ID ${req.user.id} has already published a bootcamp`,
+                400
+            )
+        );
+    }
+
     const bootCamp = await BootCamp.create(req.body);
     // console.log(req.body);
     res.status(201)
@@ -58,44 +74,68 @@ exports.getBootCamp = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/v1/bootcamps/:id           U
 // @access  Private                             U
 exports.updateBootCamp = asyncHandler(async (req, res, next) => {
-    let bootCampZ = await BootCamp.find();
-    const bootCamp = await BootCamp.findByIdAndUpdate(req.params.id, req.body, {
+    let bootcamp = await BootCamp.findById(req.params.id);
+    let bootcampz = await BootCamp.find();
+
+    if (!bootcamp) {
+        return next(
+            new ErrorResponse(`PUT bootcamp by ID ${req.params.id} is an odd request.. out of ${bootcampz.length}`, 404)
+        );
+    }
+
+    // Make sure user is bootcamp owner
+    if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(
+            new ErrorResponse(
+                `User ${req.params.id} is not authorized to update this bootcamp`,
+                401
+            )
+        );
+    }
+
+    bootcamp = await BootCamp.findByIdAndUpdate(req.params.id, req.body, {
         new: true,
         runValidators: true
     });
-    if (!bootCamp) {
-        return next(
-            new ErrorResponse(`PUT BootCamp by ID ${req.params.id} is an odd request.. out of ${bootCampZ.length}`, 404)
-        );
-    }
+
     res.status(200)
         .json({
             success: true,
             msg: `Updated BootCamp ${req.params.id}`,
-            data: bootCamp
+            data: bootcamp
         });
-
 });
 
 // @desc Delete a single BootCamp               D
 // @route DELETE /api/v1/bootcamps/:id          D
 // @access Private                              D
 exports.deleteBootCamp = asyncHandler(async (req, res, next) => {
-    let bootCampZ = await BootCamp.find();
-    const bootCamp = await BootCamp.findById(req.params.id);
-    if (!bootCamp) {
+    const bootcamp = await BootCamp.findById(req.params.id);
+    const bootcampz = await BootCamp.find();
+
+    if (!bootcamp) {
         return next(
-            new ErrorResponse(`DELETE BootCamp by ID ${req.params.id} is an ODDITY not found in this database ${bootCampZ.length}`, 404)
+            new ErrorResponse(`DELETE BootCamp by ID ${req.params.id} is an ODDITY not found in this database ${bootcampz.length}`, 404)
         );
     }
 
-    bootCamp.remove();
+    // Make sure user is bootcamp owner
+    if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(
+            new ErrorResponse(
+                `User ${req.params.id} is not authorized to delete this bootcamp`,
+                401
+            )
+        );
+    }
+
+    bootcamp.remove();
 
     res.status(200)
         .json({
             success: true,
-            msg: `Deleted BootCamp by ID ${req.params.id} out of ${bootCampZ.length - 1} remaining`,
-            data: bootCamp
+            msg: `Deleted BootCamp by ID ${req.params.id} out of ${bootcampz.length - 1} remaining`,
+            data: bootcamp
         });
 });
 
@@ -136,6 +176,16 @@ exports.bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
     if (!bootcamp) {
         return next(
             new ErrorResponse(`Bootcamp not found with id of ${req.params.id}`, 404)
+        );
+    }
+
+    // Make sure user is bootcamp owner
+    if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(
+            new ErrorResponse(
+                `User ${req.params.id} is not authorized to update this bootcamp`,
+                401
+            )
         );
     }
 

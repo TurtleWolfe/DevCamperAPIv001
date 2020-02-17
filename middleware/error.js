@@ -9,7 +9,7 @@ const errorHandler = (err, req, res, next) => {
     // Mongoose bad ObjectID
     // console.log(err.name);
     if (err.name === 'CastError') {
-        const message = `Resource not found with an id of ${err.value} ${req.params.id} `;
+        const message = `Resource not found with an id of ${err.value} ${req.params.id}`;
         error = new ErrorResponse(message, 404);
     }
 
@@ -23,7 +23,7 @@ const errorHandler = (err, req, res, next) => {
     // Mongoose validation error
     // console.log(err.name);
     if (err.name === 'ValidationError') {
-        const message = Object.values(err.errors).map(val => val.message) || `Resource with an id of ${err.value} ot ${req.params.id}`;
+        const message = Object.values(err.errors).map(val => val.message) || `Resource with an id of ${err.value} or ${req.params.id} Validation ErrorJS MIDDLEWARE`;
         error = new ErrorResponse(message, 400);
     }
 
@@ -31,7 +31,7 @@ const errorHandler = (err, req, res, next) => {
         .status(error.statusCode || 500)
         .json({
             success: false,
-            msg: `GET BootCamp by ID ${req.params.id} is an odd request..`,
+            // msg: `ErrorJS MIDDLEWARE:: ${req.params.id} is an odd request..`,
             error: error.message || 'Server Error'
             // data: bootCamp,
         });

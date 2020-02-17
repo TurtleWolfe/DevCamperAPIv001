@@ -1,5 +1,4 @@
 const advancedResults = (model, populate) => async (req, res, next) => {
-    // let bootCampZ = await BootCamp.find();
     let query;
 
     // Copy reqest query
